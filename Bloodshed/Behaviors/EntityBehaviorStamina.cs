@@ -167,7 +167,7 @@ namespace Bloodshed.Behaviors
                     {
                         plr.Stats.Set("walkspeed", $"{Bloodshed.ModId}:walkspeed", -WalkSpeedReductionHalfStamina, true); // Player moves slower when low on stamina
                     }
-                    else if (stamina < maxStamina * 0.1f)
+                    else if (stamina < maxStamina * 0.1f && !Bloodshed.IsVigorPresent) // Don't apply exhaustion penalty if Vigor is present - Vigor handles this
                     {
                         plr.Stats.Set("walkspeed", $"{Bloodshed.ModId}:walkspeed", -WalkSpeedReductionExhausted, true); // Player moves even slower when exhausted
                     }
