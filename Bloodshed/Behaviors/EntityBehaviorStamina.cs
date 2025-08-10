@@ -165,16 +165,20 @@ namespace Bloodshed.Behaviors
                     }
 
                     // --- Fatiguing actions ---
-                    // Player swimming
-                    if (plr.Swimming)
+                    // Only apply swimming and sprinting fatigue if Vigor is not present (Vigor handles these)
+                    if (!Bloodshed.IsVigorPresent)
                     {
-                        activelyFatiguing = ApplyFatigue(SwimFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Swim);
-                    }
+                        // Player swimming
+                        if (plr.Swimming)
+                        {
+                            activelyFatiguing = ApplyFatigue(SwimFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Swim);
+                        }
 
-                    // Player sprinting
-                    if (plr.Controls.Sprint && (plr.Controls.Forward || plr.Controls.Left || plr.Controls.Right || plr.Controls.Backward))
-                    {
-                        activelyFatiguing = ApplyFatigue(SprintFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Run);
+                        // Player sprinting
+                        if (plr.Controls.Sprint && (plr.Controls.Forward || plr.Controls.Left || plr.Controls.Right || plr.Controls.Backward))
+                        {
+                            activelyFatiguing = ApplyFatigue(SprintFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Run);
+                        }
                     }
 
                     // Player defensive posture
@@ -254,11 +258,12 @@ namespace Bloodshed.Behaviors
             // Use Vigor integration if available, otherwise use Bloodshed's stamina system
             if (Bloodshed.IsVigorPresent)
             {
-                // Route stamina consumption through Vigor
-                VigorIntegration.ConsumeStamina(plr, fatigue);
+                // Scale fatigue for Vigor's stamina system (Vigor uses ~1500 stamina vs Bloodshed's 100)
+                float scaledFatigue = fatigue * 1.5f;
+                VigorIntegration.ConsumeStamina(plr, scaledFatigue);
                 if (DebugMode)
                 {
-                    Bloodshed.Logger.Notification($"[Vigor Integration] {ftgSource.Source} consumed {fatigue} stamina via Vigor");
+                    Bloodshed.Logger.Notification($"[Vigor Integration] {ftgSource.Source} consumed {scaledFatigue} stamina via Vigor (scaled from {fatigue})");
                 }
             }
             else
