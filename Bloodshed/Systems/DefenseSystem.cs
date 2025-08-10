@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using static Vintagestory.API.Common.EntityAgent;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -6,6 +6,7 @@ using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 using Bloodshed.Behaviors;
+using Bloodshed.Integration;
 
 namespace Bloodshed.Systems
 {
@@ -54,10 +55,27 @@ namespace Bloodshed.Systems
             if (defAttr == null || !defAttr.Exists) return damage;
 
             var ebs = player.Entity.GetBehavior<EntityBehaviorStamina>();
-            if (ebs.Stamina <= 0)
+            
+            // Check if player is exhausted using the appropriate stamina system
+            bool isExhausted;
+            if (Bloodshed.IsVigorPresent)
             {
-                // Notify player about fatigue
-                (player as IServerPlayer)?.SendMessage(GlobalConstants.DamageLogChatGroup, Lang.Get("bloodshed:fatiguebreakthrough"), EnumChatType.Notification);
+                // Use Vigor's stamina values when present
+                isExhausted = VigorIntegration.GetCurrentStamina(player.Entity as EntityPlayer) <= 0;
+            }
+            else
+            {
+                // Use Bloodshed's stamina values
+                isExhausted = ebs.Stamina <= 0;
+            }
+            
+            if (isExhausted)
+            {
+                // Notify player that they're too exhausted to block effectively
+                (player as IServerPlayer)?.SendMessage(GlobalConstants.DamageLogChatGroup, 
+                    Lang.Get("Too exhausted to block - {0:0.#} damage taken from {1}", damage, 
+                    activeSlot?.Itemstack?.GetName() ?? "weapon"), 
+                    EnumChatType.Notification);
                 return damage;
             }
 

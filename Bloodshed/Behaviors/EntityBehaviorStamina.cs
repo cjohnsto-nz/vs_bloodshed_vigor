@@ -135,8 +135,20 @@ namespace Bloodshed.Behaviors
             if (entity is not EntityPlayer plr) return; // Only players have the stamina behavior             
             if (plr.Player.WorldData.CurrentGameMode == EnumGameMode.Creative) return; // Only players in survival mode have stamina
             
-            var stamina = Stamina;  // higher performance to read this TreeAttribute only once
-            var maxStamina = MaxStamina;
+            // Get stamina values from appropriate system (Vigor or Bloodshed)
+            float stamina, maxStamina;
+            if (Bloodshed.IsVigorPresent)
+            {
+                // Use Vigor's stamina values for penalties
+                stamina = VigorIntegration.GetCurrentStamina(plr);
+                maxStamina = VigorIntegration.GetMaxStamina(plr);
+            }
+            else
+            {
+                // Use Bloodshed's stamina values
+                stamina = Stamina;
+                maxStamina = MaxStamina;
+            }
 
             timeSinceLastUpdate += deltaTime;
 
