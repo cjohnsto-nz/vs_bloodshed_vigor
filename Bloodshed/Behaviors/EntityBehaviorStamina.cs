@@ -1,4 +1,5 @@
-﻿using Bloodshed.Systems;
+using Bloodshed.Integration;
+using Bloodshed.Systems;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -245,22 +246,32 @@ namespace Bloodshed.Behaviors
 
         public void FatigueEntity(float fatigue, FatigueSource ftgSource)
         {
-            var stamina = Stamina;  // higher performance to read this TreeAttribute only once
-            var maxStamina = MaxStamina;
-
             if (entity.World.Side == EnumAppSide.Client) return;
-
             if (entity is not EntityPlayer plr) return; // Only players have the stamina behavior
-
             if (!entity.Alive) return;
             if (fatigue <= 0) return;
 
-            Stamina = GameMath.Clamp(stamina - fatigue, 0, maxStamina);
-
-            if (DebugMode)
+            // Use Vigor integration if available, otherwise use Bloodshed's stamina system
+            if (Bloodshed.IsVigorPresent)
             {
-                Bloodshed.Logger.Notification($"{ftgSource.Source} reduced stamina by: {fatigue}");
-                Bloodshed.Logger.Notification($"Stamina: {stamina}/{maxStamina}");
+                // Route stamina consumption through Vigor
+                VigorIntegration.ConsumeStamina(plr, fatigue);
+                if (DebugMode)
+                {
+                    Bloodshed.Logger.Notification($"[Vigor Integration] {ftgSource.Source} consumed {fatigue} stamina via Vigor");
+                }
+            }
+            else
+            {
+                // Original Bloodshed stamina logic
+                var stamina = Stamina;  // higher performance to read this TreeAttribute only once
+                var maxStamina = MaxStamina;
+                Stamina = GameMath.Clamp(stamina - fatigue, 0, maxStamina);
+                if (DebugMode)
+                {
+                    Bloodshed.Logger.Notification($"{ftgSource.Source} reduced stamina by: {fatigue}");
+                    Bloodshed.Logger.Notification($"Stamina: {stamina}/{maxStamina}");
+                }
             }
 
             if (fatigue > 5f)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 
@@ -18,13 +18,22 @@ namespace Bloodshed.Hud
         public override void StartClientSide(ICoreClientAPI api)
         {
             capi = api;
-            renderer = new StaminaBarRenderer(api);
-            api.Event.RegisterRenderer(renderer, EnumRenderStage.Ortho, $"{Core.ModId}:staminabar");
+            
+            // Only register stamina bar if Vigor is not present
+            if (!Core.IsVigorPresent)
+            {
+                renderer = new StaminaBarRenderer(api);
+                api.Event.RegisterRenderer(renderer, EnumRenderStage.Ortho, $"{Core.ModId}:staminabar");
+            }
+            else
+            {
+                Core.Logger.Notification("Vigor detected - Bloodshed stamina UI suppressed");
+            }
         }
 
         public override void Dispose()
         {
-            renderer.Dispose();
+            renderer?.Dispose();
         }
     }
 }

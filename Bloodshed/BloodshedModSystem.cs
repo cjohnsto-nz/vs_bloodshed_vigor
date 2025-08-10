@@ -1,6 +1,6 @@
-﻿using Bloodshed.Behaviors;
+using Bloodshed.Behaviors;
 using Bloodshed.Config;
-using Bloodshed.Items;
+using Bloodshed.Integration;
 using Bloodshed.Systems;
 using System;
 using Vintagestory.API.Client;
@@ -24,20 +24,31 @@ namespace Bloodshed
 
         internal ICoreClientAPI capi;
         internal DefenseSystem defenseSystem;
+        internal VigorIntegrationSystem vigorIntegration;
+        
+        // Vigor detection
+        public bool IsVigorPresent { get; private set; }
 
         public override void Start(ICoreAPI api)
         {
             Instance = this;
             Api = api;
-            api.RegisterItemClass(ModId + ":itemspearchargeable", typeof(ItemSpearChargeable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorStamina));
 
             defenseSystem = new DefenseSystem(api);
+            
+            // Initialize Vigor integration
+            vigorIntegration = new VigorIntegrationSystem();
+            vigorIntegration.StartPre(api);
+            
+            Logger.Event("[Bloodshed] Start() called - IsVigorPresent: " + IsVigorPresent);
+            
             ReloadConfig(api);
         }
 
         public override void StartServerSide(ICoreServerAPI api)
         {
+            Logger.Event("[Bloodshed] StartServerSide() called");
             api.Event.OnEntityLoaded += AddEntityBehaviors;
             api.Event.PlayerJoin += Event_PlayerJoin;
             Logger.Event("Loaded server side");
@@ -49,6 +60,38 @@ namespace Bloodshed
             capi = api;
 
             Mod.Logger.Notification(Lang.Get($"{ModId}:clienthello"));
+        }
+        
+        public override void AssetsFinalize(ICoreAPI api)
+        {
+            Logger.Event($"[Bloodshed] AssetsFinalize() called on {api.Side} side");
+            // Detect Vigor mod presence after all mods are loaded
+            try
+            {
+                var vigorMod = api.ModLoader.GetModSystem("Vigor.VigorModSystem");
+                IsVigorPresent = vigorMod != null;
+                if (IsVigorPresent)
+                {
+                    if (api.Side == EnumAppSide.Server)
+                    {
+                        vigorIntegration.StartServerSide(api as ICoreServerAPI);
+                    }
+                    else
+                    {
+                        vigorIntegration.StartClientSide(api as ICoreClientAPI);
+                    }
+                    Logger.Event($"Vigor detected - integration enabled ({api.Side} side)");
+                }
+                else
+                {
+                    Logger.Event("Vigor not detected - using Bloodshed stamina system");
+                }
+            }
+            catch (Exception ex)
+            {
+                IsVigorPresent = false;
+                Logger.Error($"Error detecting Vigor: {ex.Message}");
+            }
         }
 
         private void AddEntityBehaviors(Entity entity)
