@@ -60,8 +60,8 @@ namespace Bloodshed.Systems
             bool isExhausted;
             if (Bloodshed.IsVigorPresent)
             {
-                // Use Vigor's stamina values when present
-                isExhausted = VigorIntegration.GetCurrentStamina(player.Entity as EntityPlayer) <= 0;
+                // Use Vigor's exhaustion check when present
+                isExhausted = VigorIntegration.IsExhausted(player.Entity as EntityPlayer);
             }
             else
             {

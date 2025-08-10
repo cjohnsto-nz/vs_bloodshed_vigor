@@ -206,7 +206,15 @@ namespace Bloodshed.Behaviors
                     }
                 }
 
-                Exhausted = stamina <= 0; // Player is exhausted when stamina reaches 0
+                // Set exhausted state using appropriate stamina system
+                if (Bloodshed.IsVigorPresent)
+                {
+                    Exhausted = VigorIntegration.IsExhausted(plr);
+                }
+                else
+                {
+                    Exhausted = stamina <= 0; // Player is exhausted when stamina reaches 0
+                }
 
                 timeSinceLastUpdate = 0;
             }
